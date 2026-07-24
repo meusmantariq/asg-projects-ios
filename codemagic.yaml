@@ -11,6 +11,8 @@ workflows:
     scripts:
       - name: Build unsigned .app
         script: |
+          set -e
+          set -x
           xcodebuild build \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
@@ -20,16 +22,35 @@ workflows:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            PROVISIONING_PROFILE=""
+            PROVISIONING_PROFILE="" | tee xcodebuild.log
+          echo "===== SEARCHING FOR .app ====="
+          find build -name "*.app" -type d
       - name: Package unsigned .ipa
         script: |
+          set -e
+          set -x
+          APP_PATH=$(find build -name "*.app" -type d | head -1)
+          echo "Found app at: $APP_PATH"
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: No .app bundle found. Build likely failed."
+            exit 1
+          fi
+          echo "===== APP CONTENTS ====="
+          find "$APP_PATH" -maxdepth 2
+          echo "===== APP SIZE ====="
+          du -sh "$APP_PATH"
           mkdir -p Payload
-          cp -r "build/Build/Products/Release-iphoneos/ASGProjectsApp.app" Payload/
+          cp -r "$APP_PATH" Payload/
+          echo "===== PAYLOAD SIZE ====="
+          du -sh Payload
           zip -r ASGProjectsApp-unsigned.ipa Payload
+          echo "===== FINAL IPA SIZE ====="
+          ls -la ASGProjectsApp-unsigned.ipa
           mkdir -p build/ios/ipa
           mv ASGProjectsApp-unsigned.ipa build/ios/ipa/
     artifacts:
       - build/ios/ipa/*.ipa
+      - xcodebuild.log
     publishing:
       email:
         recipients:
