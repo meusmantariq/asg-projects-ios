@@ -1,0 +1,32 @@
+workflows:
+  ios-workflow:
+    name: ASG Projects iOS Build
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: com.alsaifgraphics.projects
+      vars:
+        XCODE_WORKSPACE: "ASGProjectsApp.xcodeproj"
+        XCODE_SCHEME: "ASGProjectsApp"
+      xcode: latest
+    scripts:
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - itsupport@alsaifgraphics.com
+        notify:
+          success: true
+          failure: true
