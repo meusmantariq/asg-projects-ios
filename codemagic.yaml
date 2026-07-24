@@ -4,25 +4,32 @@ workflows:
     max_build_duration: 30
     instance_type: mac_mini_m2
     environment:
-      ios_signing:
-        distribution_type: ad_hoc
-        bundle_identifier: com.alsaifgraphics.projects
       vars:
-        XCODE_WORKSPACE: "ASGProjectsApp.xcodeproj"
+        XCODE_PROJECT: "ASGProjectsApp.xcodeproj"
         XCODE_SCHEME: "ASGProjectsApp"
       xcode: latest
     scripts:
-      - name: Set up code signing
+      - name: Build unsigned .app
         script: |
-          xcode-project use-profiles
-      - name: Build ipa for distribution
+          xcodebuild build \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE=""
+      - name: Package unsigned .ipa
         script: |
-          xcode-project build-ipa \
-            --project "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+          mkdir -p Payload
+          cp -r "build/Build/Products/Release-iphoneos/ASGProjectsApp.app" Payload/
+          zip -r ASGProjectsApp-unsigned.ipa Payload
+          mkdir -p build/ios/ipa
+          mv ASGProjectsApp-unsigned.ipa build/ios/ipa/
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
         recipients:
