@@ -4,7 +4,7 @@ import WebKit
 struct ContentView: View {
     var body: some View {
         WebView(url: URL(string: "https://projects.alsaifgraphics.com/")!)
-            .ignoresSafeArea(edges: .bottom)
+            .ignoresSafeArea()
     }
 }
 
@@ -15,6 +15,7 @@ struct WebView: UIViewRepresentable {
         let webView = WKWebView()
         webView.navigationDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.load(URLRequest(url: url))
         return webView
     }
